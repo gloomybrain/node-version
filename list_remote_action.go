@@ -58,7 +58,11 @@ func FilterList(source *list.List, filter func (e *list.Element) bool) *list.Lis
 func ListRemoteAction(context *cli.Context) {
 
 	resp, err := http.Get(DIST_URL + "/index.json")
-	defer resp.Body.Close()
+	defer (func() {
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+	})()
 
 	if err != nil {
 		fmt.Println(err.Error())
