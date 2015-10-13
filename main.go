@@ -24,12 +24,12 @@ func main() {
 			Name: "list-remote",
 			Aliases: []string{"ls-remote" },
 			Usage: "list all existing versions of node.js",
-			Action: ListAction,
+			Action: ListRemoteAction,
 		},
 		{
 			Name: "current",
 			Usage: "show current version of node.js",
-			Action: ListAction,
+			Action: CurrentAction,
 		},
 		{
 			Name: "install",
