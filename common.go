@@ -6,32 +6,38 @@ import (
 	"container/list"
 	"encoding/json"
 	"net/http"
+	"strings"
+	"errors"
 )
 
 
-const DIST_URL string = "https://nodejs.org/dist/"
-const DATA_DIR string = ".gnvm"
+const DIST_URL string = "https://nodejs.org/dist"
+const DATA_DIR string = ".node-version"
 const BIN string = "bin"
 const VERSIONS string = "versions"
 
 
-func getDataPath() string {
+func GetDataPath() string {
 	return path.Join(os.Getenv("HOME"), DATA_DIR)
 }
 
+func GetTarballName(versionName string) string {
+	return "node-" + versionName + "-darwin-x64.tar.gz"
+}
+
 func MakeVersionDir(versionName string) error {
-	p := path.Join(getDataPath(), VERSIONS, versionName)
+	p := path.Join(GetDataPath(), VERSIONS, versionName)
 	return os.MkdirAll(p, 0755)
 }
 
 func LinkDefaultVersion(versionName string) error {
 	var result error = nil
 
-	versionPath := path.Join(getDataPath(), VERSIONS, versionName)
+	versionPath := path.Join(GetDataPath(), VERSIONS, versionName)
 	_, result = os.Stat(versionPath)
 
 	if (result != nil) {
-		result = os.Symlink(path.Join(versionPath, BIN), path.Join(getDataPath(), BIN))
+		result = os.Symlink(path.Join(versionPath, BIN), path.Join(GetDataPath(), BIN))
 	}
 
 	return result
@@ -50,19 +56,22 @@ func FilterList(source *list.List, filter func (e *list.Element) bool) *list.Lis
 }
 
 func GetRemoteVersions() (*list.List, error) {
-	resp, err := http.Get(DIST_URL + "/index.json")
-	defer (func() {
-		if resp.Body != nil {
-			resp.Body.Close()
-		}
-	})()
+	url := strings.Join([]string{DIST_URL, "index.json" }, "/")
+	resp, err := http.Get(url)
 
 	if err != nil {
 		return nil, err
 	}
 
+	if resp.Body == nil {
+		return nil, errors.New("some network problem had occured")
+	} else {
+		defer resp.Body.Close()
+	}
+
 	decoder := json.NewDecoder(resp.Body)
-	var index VersionIndex
+
+	index := VersionIndex{}
 
 	err = decoder.Decode(&index)
 
