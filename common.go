@@ -21,6 +21,34 @@ func GetDataPath() string {
 	return path.Join(os.Getenv("HOME"), DATA_DIR)
 }
 
+func EnsureDataDirExists() error {
+
+	p := GetDataPath()
+	info, err := os.Stat(p)
+
+	if err != nil {
+
+		if os.IsNotExist(err) {
+
+			return os.Mkdir(p, os.FileMode(0744))
+
+		} else {
+
+			return err
+		}
+
+	} else if !info.IsDir() {
+
+		return errors.New(p + " is not a directory")
+
+	} else if info.Mode() != os.ModeDir | os.FileMode(0744) {
+
+		return errors.New(p + " has wrong permissions")
+	}
+
+	return nil
+}
+
 func GetTarballName(versionName string) string {
 	return "node-" + versionName + "-darwin-x64.tar.gz"
 }

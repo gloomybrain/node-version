@@ -40,25 +40,25 @@ func InstallAction(context *cli.Context) {
 	version := versionEl.Value.(VersionDesc).Version
 	url := strings.Join([]string{DIST_URL, version, GetTarballName(version)}, "/")
 
-	req, err := http.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	if req.Body == nil {
+	if resp.Body == nil {
 		fmt.Println("some network problem has occured")
 		return
 	}
 
-	defer req.Body.Close()
+	defer resp.Body.Close()
 
 
 	fileName := path.Join(GetDataPath(), GetTarballName(version))
 	fileFlag := os.O_WRONLY
 	fileMode := os.FileMode(0744)
 
-	err = os.Mkdir(GetDataPath(), fileMode)
+	err = EnsureDataDirExists()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -87,35 +87,8 @@ func InstallAction(context *cli.Context) {
 
 	defer file.Close()
 
-	reading := true
-	buf := make([]byte, 4096)
+	io.Copy(file, resp.Body)
 
-	for reading {
-		n_r, err_r := req.Body.Read(buf)
-
-		if err_r == nil || err_r == io.EOF {
-
-			for sum_w := 0; sum_w < n_r; {
-				n_w, err_w := file.Write(buf[0:n_r])
-
-				if err_w != nil {
-					fmt.Println(err_w.Error())
-					return
-				}
-
-				sum_w += n_w
-			}
-
-			if err_r == io.EOF {
-				reading = false
-				break
-			}
-
-		} else {
-			fmt.Println(err_r.Error())
-			return
-		}
-	}
 
 	fmt.Println("file succesfully downloaded")
 }
