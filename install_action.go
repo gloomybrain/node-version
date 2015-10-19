@@ -5,10 +5,9 @@ import (
 	"github.com/codegangsta/cli"
 	"container/list"
 	"strings"
-	"net/http"
+	"errors"
 	"os"
 	"path"
-	"io"
 )
 
 
@@ -27,68 +26,59 @@ func InstallAction(context *cli.Context) {
 	}
 
 	suitableVersions := FilterList(availableVersions, func(el *list.Element) bool {
-		vd := el.Value.(VersionDesc)
-		return vd.BelongsTo(requestedVersionName)
+		vd, ok := el.Value.(VersionDesc)
+		return ok && vd.BelongsTo(requestedVersionName)
 	})
 
-	versionEl := suitableVersions.Back()
-	if versionEl == nil {
+	ve := suitableVersions.Back()
+	if ve == nil {
 		fmt.Println("no suitable version found")
 		return
 	}
 
-	version := versionEl.Value.(VersionDesc).Version
+	vd, ok := ve.Value.(VersionDesc)
+	if !ok {
+		fmt.Println(errors.New("unable to typecast list element").Error())
+		return
+	}
+
+	version := vd.Version
+
 	url := strings.Join([]string{DIST_URL, version, GetTarballName(version)}, "/")
+	location := GetDataPath()
+	name := GetTarballName(version)
 
-	resp, err := http.Get(url)
+	err = DownloadAndSave(url, location, name)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	if resp.Body == nil {
-		fmt.Println("some network problem has occured")
-		return
-	}
-
-	defer resp.Body.Close()
-
-
-	fileName := path.Join(GetDataPath(), GetTarballName(version))
-	fileFlag := os.O_WRONLY
-	fileMode := os.FileMode(0744)
-
-	err = EnsureDataDirExists()
+	err = UnGZip(location, name)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
+	name = name[0:len(name) - 3]
 
-	file, err := os.Create(fileName)
+	err = UnTar(location, name)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	file.Close()
-
-	err = os.Chmod(fileName, fileMode)
+	err = os.Remove(path.Join(location, name))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	file, err = os.OpenFile(fileName, fileFlag, fileMode)
+	err = os.Remove(path.Join(location, name + ".gz"))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	defer file.Close()
-
-	io.Copy(file, resp.Body)
-
-
-	fmt.Println("file succesfully downloaded")
+	fmt.Println("installation complete")
 }
