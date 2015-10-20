@@ -62,7 +62,10 @@ func InstallAction(context *cli.Context) {
 
 	name = name[0:len(name) - 3]
 
-	err = UnTar(location, name)
+	destLocation := GetVersionsPath()
+	EnsureDirExists(destLocation, PERM)
+
+	err = UnTar(location, name, destLocation)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

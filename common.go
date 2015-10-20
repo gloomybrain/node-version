@@ -17,6 +17,7 @@ import (
 
 const DIST_URL string = "https://nodejs.org/dist"
 const DATA_DIR string = ".node-version"
+const VERSIONS = "versions"
 const BIN string = "bin"
 const PERM uint32 = 0744
 
@@ -25,12 +26,17 @@ func GetDataPath() string {
 	return path.Join(os.Getenv("HOME"), DATA_DIR)
 }
 
+func GetVersionsPath() string {
+	return path.Join(GetDataPath(), VERSIONS)
+}
+
 func EnsureDirExists(p string, perm uint32) error {
 	info, err := os.Stat(p)
 	fileMode := os.ModeDir | os.FileMode(perm)
 
 	if err != nil {
 		if os.IsNotExist(err) {
+			fmt.Println("creating directory " + p)
 			return os.MkdirAll(p, fileMode)
 		} else {
 			return err
@@ -158,16 +164,16 @@ func UnGZip(location, fileName string) error {
 	return nil
 }
 
-func UnTar(location, fileName string) error {
-	filePath := path.Join(location, fileName)
+func UnTar(location, fileName, destLocation string) error {
+	sourcePath := path.Join(location, fileName)
 
 	fmt.Println("opening file...")
-	fmt.Println(filePath)
+	fmt.Println(sourcePath)
 
-	_, err := os.Stat(filePath)
+	_, err := os.Stat(sourcePath)
 	if err != nil { return err }
 
-	sourceFile, err := os.Open(filePath)
+	sourceFile, err := os.Open(sourcePath)
 	if err != nil { return err }
 	defer sourceFile.Close()
 
@@ -179,7 +185,7 @@ func UnTar(location, fileName string) error {
 		if err == io.EOF { break }
 		if err != nil { return err }
 
-		destPath := path.Join(location, hdr.Name)
+		destPath := path.Join(destLocation, hdr.Name)
 
 		if strings.HasSuffix(hdr.Name, "/") && hdr.Size == 0 {
 			err = os.MkdirAll(destPath, os.ModeDir | hdr.FileInfo().Mode())
