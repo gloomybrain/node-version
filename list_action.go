@@ -3,19 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/cli"
-	"io/ioutil"
-	"os"
 	"strings"
 )
 
 
 func ListAction(c *cli.Context) {
-	infoList, err := ioutil.ReadDir(GetVersionsPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println("nothing here")
-		return
-	}
+	versions, err := GetLocalVersions()
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -24,20 +17,13 @@ func ListAction(c *cli.Context) {
 
 	filter := c.Args().First()
 
-	if filter != nil {
-		fmt.Println("currently installed versions (filtered):")
-	}else {
-		fmt.Println("currently installed versions:")
+	if filter != "" {
+		versions = FilterStringSlice(versions, func(element *string) bool {
+			return strings.Contains(*element, filter)
+		})
 	}
 
-	for _, info := range infoList {
-
-		if filter != "" {
-			if strings.Contains(info.Name(), filter) {
-				fmt.Println(info.Name())
-			}
-		}else {
-			fmt.Println(info.Name())
-		}
+	for _, v := range *versions {
+		fmt.Println(v)
 	}
 }

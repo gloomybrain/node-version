@@ -11,9 +11,9 @@ import (
 )
 
 
-func InstallAction(context *cli.Context) {
+func LoadAction(context *cli.Context) {
 	if len(context.Args()) == 0 {
-		fmt.Println("no version given to install")
+		fmt.Println("no version given to load")
 		return
 	}
 
@@ -46,42 +46,50 @@ func InstallAction(context *cli.Context) {
 
 	url := strings.Join([]string{DIST_URL, version, GetTarballName(version)}, "/")
 	location := GetDataPath()
-	name := GetTarballName(version)
+	nameTarGz := GetTarballName(version)
 
-	err = DownloadAndSave(url, location, name)
+	err = DownloadAndSave(url, location, nameTarGz)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	err = UnGZip(location, name)
+	err = UnGZip(location, nameTarGz)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	name = name[0:len(name) - 3]
+	nameTar := nameTarGz[0:len(nameTarGz) - len(".gz")]
 
 	destLocation := GetVersionsPath()
 	EnsureDirExists(destLocation, PERM)
 
-	err = UnTar(location, name, destLocation)
+	err = UnTar(location, nameTar, destLocation)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	err = os.Remove(path.Join(location, name))
+	err = os.Remove(path.Join(location, nameTarGz))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	err = os.Remove(path.Join(location, name + ".gz"))
+	err = os.Remove(path.Join(location, nameTar))
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	fmt.Println("installation complete")
+	name := nameTar[0:len(nameTar) - len(".tar")]
+
+	err = os.Rename(path.Join(destLocation, name), path.Join(destLocation, version))
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println("load complete")
 }

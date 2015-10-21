@@ -12,6 +12,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"archive/tar"
+	"io/ioutil"
 )
 
 
@@ -66,6 +67,18 @@ func FilterList(source *list.List, filter func (e *list.Element) bool) *list.Lis
 	return result
 }
 
+func FilterStringSlice(source *[]string, filter func(element *string) bool) *[]string {
+	var result []string
+
+	for _, v := range *source {
+		if filter(&v) {
+			result = append(result, v)
+		}
+	}
+
+	return &result
+}
+
 func GetRemoteVersions() (*list.List, error) {
 	url := strings.Join([]string{DIST_URL, "index.json" }, "/")
 
@@ -97,6 +110,27 @@ func GetRemoteVersions() (*list.List, error) {
 
 	fmt.Println("done")
 	return result, nil
+}
+
+func GetLocalVersions() (*[]string, error) {
+	infoList, err := ioutil.ReadDir(GetVersionsPath())
+
+	if os.IsNotExist(err) {
+		result := make([]string, 0)
+		return &result, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, len(infoList))
+
+	for index, info := range infoList {
+		result[index] = info.Name()
+	}
+
+	return &result, nil
 }
 
 func DownloadAndSave(url, location, name string) error {

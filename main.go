@@ -32,10 +32,9 @@ func main() {
 			Action: CurrentAction,
 		},
 		{
-			Name: "install",
-			Aliases: []string{"i" },
+			Name: "load",
 			Usage: "install particular version of node.js",
-			Action: InstallAction,
+			Action: LoadAction,
 		},
 		{
 			Name: "use",
