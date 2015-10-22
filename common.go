@@ -21,6 +21,7 @@ const DATA_DIR string = ".node-version"
 const VERSIONS = "versions"
 const BIN string = "bin"
 const PERM uint32 = 0744
+const DEFAULT string = "default"
 
 
 func GetDataPath() string {

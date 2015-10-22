@@ -27,9 +27,9 @@ func main() {
 			Action: ListRemoteAction,
 		},
 		{
-			Name: "current",
-			Usage: "show current version of node.js",
-			Action: CurrentAction,
+			Name: "default",
+			Usage: "show default version of node.js",
+			Action: DefaultAction,
 		},
 		{
 			Name: "load",
